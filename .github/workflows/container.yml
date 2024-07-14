@@ -1,0 +1,48 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Build Image
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push events but only for the "master" branch
+  push:
+    branches: ["master"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "transport"
+  mind-map:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: "Login to GitHub Container Registry"
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+
+      - uses: actions/checkout@v4
+        with:
+          ref: "master"
+
+      - name: Build Image
+        run: export VERSION=$(cat VERSION) && make
+
+      - name: List all images
+        run: docker image ls
+
+      - name: Build Push
+        run:
+          docker push ghcr.io/podboy/mind-map:v$(cat VERSION) |
+          docker push ghcr.io/podboy/mind-map:$(cat VERSION) |
+          docker push ghcr.io/podboy/mind-map:latest
